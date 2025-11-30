@@ -1,0 +1,22 @@
+# @package _global_
+
+env_type: "simplerenv"
+control_mode: "arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos"
+episode_mode: "eval"
+
+sim_config:
+  sim_freq: 500
+  control_freq: 5
+
+sensor_config:
+  shader_pack: "default"
+
+obs_mode: "rgb+segmentation"
+
+frame_per_second: 24
+
+sim_backend: "gpu"
+sim_device: "cuda"
+sim_device_id: 0
+model_device: "cuda"
+render_mode: "rgb_array"

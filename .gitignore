@@ -1,0 +1,16 @@
+
+log/
+outputs/
+*.mp4 
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+*.ico
+*.heic
+*.heif
+*.heif-srgb

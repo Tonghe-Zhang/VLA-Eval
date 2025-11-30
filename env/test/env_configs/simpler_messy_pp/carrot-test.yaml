@@ -1,0 +1,16 @@
+defaults:
+  - shared/shared
+
+env_id: "PutOnPlateInScene25Carrot-v1"
+episode_mode: "train"
+n_envs: 9
+n_steps_episode: 1000
+num_test_steps: 80
+
+# Action space configuration
+# pd_ee_delta_pose: 6-dim (3 pos + 3 rot) + 1-dim gripper = 7-dim
+action_chunk_size: 5
+single_action_dim: 7
+
+# object set
+obj_set: "test"
