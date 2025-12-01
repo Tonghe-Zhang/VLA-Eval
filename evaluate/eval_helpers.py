@@ -421,7 +421,15 @@ class BatchEpisodeData:
         self.step_success = []  # Track success status at each step for all environments
         
     def add_step_data_in_batch(self, obs_rgb_batch: torch.Tensor, rewards: torch.Tensor, step_info: dict, actions_batch: torch.Tensor|None = None):
-        """Record step data for all environments in batch"""
+        """Record step data for all environments in batch
+        
+        Args:
+            obs_rgb_batch: torch.Tensor, shape [B, H, W, C], where B is the number of environments, H is the height, W is the width, and C is the number of channels.
+            rewards: torch.Tensor, shape [B], where B is the number of environments.
+            step_info: dict, shape [B], where B is the number of environments.
+            actions_batch: torch.Tensor|None, shape [B, action_dim], where B is the number of environments and action_dim is the dimension of the action.
+        
+        """
         # Convert batch images to CPU and numpy
         if obs_rgb_batch.device != torch.device("cpu"):
             obs_rgb_batch = obs_rgb_batch.cpu()
