@@ -36,4 +36,6 @@ python "$SCRIPT_DIR/test_env_wrapper_overlay.py" \
 # ./test_env_wrapper_overlay_script.sh drawing/drawsvg
 # ./test_env_wrapper_overlay_script.sh drawing/drawtriangle
 # ./test_env_wrapper_overlay_script.sh nonprehensive/rollball
+# ./test_env_wrapper_overlay_script.sh nonprehensive/pusht
 # ./test_env_wrapper_overlay_script.sh simpler_messy_pp/position-test
+# ./test_env_wrapper_overlay_script.sh simpler_messy_pp/carrot

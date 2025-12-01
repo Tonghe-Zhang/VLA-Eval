@@ -53,6 +53,51 @@ from evaluate.eval_helpers import (
 )
 
 
+def get_rgb_observations_with_overlay(env, obs, info, reward, env_type, sim_device, model_device, use_render_camera=False):
+    """
+    Get RGB observations with info overlay, either from render() or sensor_data.
+    
+    Args:
+        env: The environment
+        obs: Observation dict
+        info: Info dict
+        reward: Reward tensor
+        env_type: Type of environment
+        sim_device: Simulation device
+        model_device: Model device
+        use_render_camera: If True, use render() camera; if False, use observation camera
+        
+    Returns:
+        Dict mapping camera names to RGB tensors with overlays [B, C, H, W]
+    """
+    if use_render_camera:
+        # Use render() camera - better for visualization
+        rendered_img = env.render()  # Returns numpy array (B, H, W, C) or (H, W, C)
+        rendered_img = common.to_numpy(rendered_img)
+        if len(rendered_img.shape) == 3:
+            rendered_img = rendered_img[None]  # Add batch dim if single env
+        
+        # Convert to torch and permute to (B, C, H, W)
+        rendered_img_torch = torch.from_numpy(rendered_img).to(sim_device)
+        rendered_img_torch = rendered_img_torch.permute(0, 3, 1, 2)
+        
+        # Create camera dict
+        obs_rgb_overlay = {"render_camera": rendered_img_torch}
+        
+        # Add overlays
+        from env.test.fetch_rgb_from_obs import overlay_info_on_rgb_image
+        obs_rgb_overlay["render_camera"] = overlay_info_on_rgb_image(
+            obs_rgb_overlay["render_camera"], info, reward
+        )
+    else:
+        # Use observation camera - what agent sees
+        obs_rgb_overlay = fetch_rgb_from_obs_allenvs(
+            env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False
+        )
+    
+    return obs_rgb_overlay
+
+
 @hydra.main(version_base=None, config_path="env_configs", config_name="stack_cubes")
 def main(cfg: DictConfig):
     """Main function using Hydra configuration management."""
@@ -99,7 +144,7 @@ def main(cfg: DictConfig):
     obj_set = cfg.get("obj_set", None)
     use_render_camera = cfg.get("use_render_camera", False)  # NEW: Flag to use render() instead of obs
 
-    print(f"Camera mode: {'render() camera' if use_render_camera else 'observation camera'}")
+    print(f"\nCamera mode: {'render() camera' if use_render_camera else 'observation camera'}")
 
     # Setup environment wrappers
     wrappers = [
@@ -143,37 +188,12 @@ def main(cfg: DictConfig):
     print(f"\nTest env.reset()")
     obs, info = env.reset()
     reward = torch.zeros(n_envs, device=sim_device)
-    print(f"obs={obs.keys()}, info={info.keys()}")  # type: ignore
+    print(f"obs={obs.keys()}, info={info.keys()}")
 
-
-    # Save initial observation images
-    if use_render_camera:
-        # Use render() camera - better for visualization
-        print("Using render() camera for visualization")
-        rendered_img = env.render()  # Returns numpy array (B, H, W, C) or (H, W, C)
-        rendered_img = common.to_numpy(rendered_img)
-        if len(rendered_img.shape) == 3:
-            rendered_img = rendered_img[None]  # Add batch dim if single env
-        
-        # Convert to torch and add overlays
-        rendered_img_torch = torch.from_numpy(rendered_img).to(sim_device)
-        # Permute to (B, C, H, W) for overlay function
-        rendered_img_torch = rendered_img_torch.permute(0, 3, 1, 2)
-        
-        # Create a dummy camera dict for compatibility
-        obs_rgb_overlay = {"render_camera": rendered_img_torch}
-        
-        # Add overlays
-        from env.test.fetch_rgb_from_obs import overlay_info_on_rgb_image
-        obs_rgb_overlay["render_camera"] = overlay_info_on_rgb_image(
-            obs_rgb_overlay["render_camera"], info, reward
-        )
-    else:
-        # Use observation camera - what agent sees
-        print("Using observation camera (from sensor_data)")
-        obs_rgb_overlay = fetch_rgb_from_obs_allenvs(
-            env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False
-        )
+    # Get RGB observations with overlay
+    obs_rgb_overlay = get_rgb_observations_with_overlay(
+        env, obs, info, reward, env_type, sim_device, model_device, use_render_camera
+    )
     
     print(f"RGB observation keys: {list(obs_rgb_overlay.keys())}")
     for camera_name, img in obs_rgb_overlay.items():
@@ -217,24 +237,10 @@ def main(cfg: DictConfig):
         
         obs, reward, terminated, truncated, info = env.step(actions)
         
-        if use_render_camera:
-            # Use render() camera
-            rendered_img = env.render()
-            rendered_img = common.to_numpy(rendered_img)
-            if len(rendered_img.shape) == 3:
-                rendered_img = rendered_img[None]
-            rendered_img_torch = torch.from_numpy(rendered_img).to(sim_device)
-            rendered_img_torch = rendered_img_torch.permute(0, 3, 1, 2)
-            obs_rgb_overlay = {"render_camera": rendered_img_torch}
-            from env.test.fetch_rgb_from_obs import overlay_info_on_rgb_image
-            obs_rgb_overlay["render_camera"] = overlay_info_on_rgb_image(
-                obs_rgb_overlay["render_camera"], info, reward
-            )
-        else:
-            # Use observation camera
-            obs_rgb_overlay = fetch_rgb_from_obs_allenvs(
-                env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False
-            )
+        # Get RGB observations with overlay
+        obs_rgb_overlay = get_rgb_observations_with_overlay(
+            env, obs, info, reward, env_type, sim_device, model_device, use_render_camera
+        )
         
 
         for camera_name in obs_rgb_overlay.keys():

@@ -1,5 +1,8 @@
+# @package _global_
+
 defaults:
-  - shared/shared
+  - shared/shared_cfg
+  - _self_
 
 env_id: "PutOnPlateInScene25EEPose-v1"
 n_envs: 16
