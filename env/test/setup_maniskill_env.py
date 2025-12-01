@@ -21,12 +21,13 @@ def setup_maniskill_env(env_id,
                         control_mode,
                         episode_mode='eval',
                         obj_set=None,
-                        wrappers=None, # list of wrappers to wrap the environment. 
+                        wrappers=None, # list of wrappers to wrap the environment.
+                        shader_pack="default",  # NEW: shader pack for rendering
                         )->ManiSkillVectorEnv:
     """
     Args:
         env_id: str, the id of the environment to setup.
-        num_envs: int, the number of environments to setup.
+        n_envs: int, the number of environments to setup.
         max_episode_len: int, the maximum number of steps per episode.
         sim_backend: str, the backend to use for simulation.
         sim_device: str, the device to use for simulation.
@@ -34,10 +35,12 @@ def setup_maniskill_env(env_id,
         sim_config: dict, the configuration for simulation.
         sensor_config: dict, the configuration for sensors.
         obs_mode: str, the mode to use for observations.
+        render_mode: str, the mode to use for rendering.
         control_mode: str, the mode to use for control.
         episode_mode: str, the mode to use for episodes.
         obj_set: str, the set of objects to use for the environment.
         wrappers: list, the wrappers to use for the environment.
+        shader_pack: str, the shader pack to use for rendering (default, rt, rt-fast).
     Returns:
         venv: ManiSkillVectorEnv, the vectorized environment.
     
@@ -76,21 +79,25 @@ def setup_maniskill_env(env_id,
             logger.info(f"Current CUDA device after set_device: {torch.cuda.current_device()}")
             logger.info(f"Available devices: {torch.cuda.device_count()}")
             
+
+         
+
             if obj_set is not None:
                 env: BaseEnv = gym.make( # type: ignore
-                id=env_id,
-                num_envs=n_envs,
-                max_episode_steps=max_episode_len,
-                obs_mode=obs_mode,
-                render_mode=render_mode,
-                control_mode=control_mode,
-                sim_backend=sim_backend,
-                sim_config=sim_config,
-                sensor_configs=sensor_config,
-                viewer_camera_configs=dict(shader_pack=sensor_config.get("shader_pack", "default")),
-                reconfiguration_freq=reconfiguration_freq,
-                obj_set=obj_set
-            )# type: ignore
+                    id=env_id,
+                    num_envs=n_envs,
+                    max_episode_steps=max_episode_len,
+                    obs_mode=obs_mode,
+                    render_mode=render_mode,
+                    control_mode=control_mode,
+                    sim_backend=sim_backend,
+                    sim_config=sim_config,
+                    sensor_configs=sensor_config,
+                    human_render_camera_configs=dict(shader_pack=shader_pack),  # NEW: for rendering
+                    viewer_camera_configs=dict(shader_pack=shader_pack),
+                    reconfiguration_freq=reconfiguration_freq,
+                    obj_set=obj_set
+                )# type: ignore
             else:
                 env: BaseEnv = gym.make( # type: ignore
                     id=env_id,
@@ -102,7 +109,8 @@ def setup_maniskill_env(env_id,
                     sim_backend=sim_backend,
                     sim_config=sim_config,
                     sensor_configs=sensor_config,
-                    viewer_camera_configs=dict(shader_pack=sensor_config.get("shader_pack", "default")),
+                    human_render_camera_configs=dict(shader_pack=shader_pack),  # NEW: for rendering
+                    viewer_camera_configs=dict(shader_pack=shader_pack),
                     reconfiguration_freq=reconfiguration_freq,
                 )# type: ignore
             

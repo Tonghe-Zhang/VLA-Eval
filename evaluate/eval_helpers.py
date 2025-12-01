@@ -483,11 +483,22 @@ class BatchEpisodeData:
             env_info = {}
             for key, value in step_info.items():
                 if hasattr(value, '__getitem__') and len(value) > env_idx:
-                    env_info[key] = (
-                        value[env_idx].item() 
-                        if hasattr(value[env_idx], 'item') 
-                        else value[env_idx]
-                    )
+                    item_value = value[env_idx]
+                    # Handle different types of values
+                    if hasattr(item_value, 'item'):
+                        # Try to convert to scalar
+                        try:
+                            env_info[key] = item_value.item()
+                        except (RuntimeError, ValueError):
+                            # If it's a multi-element tensor, convert to list
+                            if hasattr(item_value, 'tolist'):
+                                env_info[key] = item_value.tolist()
+                            elif hasattr(item_value, 'numpy'):
+                                env_info[key] = item_value.cpu().numpy().tolist() if item_value.is_cuda else item_value.numpy().tolist()
+                            else:
+                                env_info[key] = item_value
+                    else:
+                        env_info[key] = item_value
                 else:
                     env_info[key] = value
             self.infos[env_idx].append(env_info)

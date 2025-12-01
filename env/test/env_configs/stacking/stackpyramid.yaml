@@ -1,8 +1,8 @@
-# Configuration for PushT-v1 environment
+# Configuration for StackPyramid-v1 environment
 
-env_id: "PushT-v1"
+env_id: "StackPyramid-v1"
 env_type: "tabletop-gripper"
-control_mode: "pd_ee_delta_pose"
+control_mode: "pd_ee_pose"
 episode_mode: "train"
 
 sim_config:
@@ -15,17 +15,21 @@ sensor_config:
   height: 480
 
 obs_mode: "rgb"
-n_envs: 9
+n_envs: 16
 n_steps_episode: 1000  # maximum steps before reset
-num_test_steps: 30  # Number of steps to run
+num_test_steps: 50  # Number of steps to run - needs more for pyramid stacking
 frame_per_second: 24
 
 sim_backend: "gpu"
 sim_device: "cuda"
 sim_device_id: 0
 model_device: "cuda"
+render_mode: "rgb_array"
 
 # Action space configuration
 action_chunk_size: 5
-single_action_dim: 6
+single_action_dim: 7
+
+# Camera configuration
+use_render_camera: true  # Use render() camera for better visualization angles
 

@@ -14,6 +14,7 @@ import shutil
 from setup_maniskill_env import setup_maniskill_env
 from ManiSkill.mani_skill.envs.sapien_env import BaseEnv  
 from ManiSkill.mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
+from ManiSkill.mani_skill.utils import common  # NEW: for to_numpy
 
 # Register custom SimplerEnvPlus environments
 import sys
@@ -62,6 +63,14 @@ def main(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
     print("=" * 60)
     
+    # Handle nested config structure (when using subdirectories)
+    # If config is nested under a group name, flatten it
+    if len(cfg) == 1 and not any(k in cfg for k in ['env_id', 'env_type']):
+        # Config is nested under a group name (e.g., cfg.drawing.env_id)
+        group_name = list(cfg.keys())[0]
+        print(f"Flattening nested config group: {group_name}")
+        cfg = cfg[group_name]
+    
     # Extract configuration values
     env_id = cfg.env_id
     env_type = cfg.env_type
@@ -70,6 +79,9 @@ def main(cfg: DictConfig):
     
     sim_config = OmegaConf.to_container(cfg.sim_config, resolve=True)
     sensor_config = OmegaConf.to_container(cfg.sensor_config, resolve=True)
+    
+    # Extract shader_pack from sensor_config or use default
+    shader_pack = sensor_config.get("shader_pack", "default") if sensor_config else "default"
     
     obs_mode = cfg.obs_mode
     n_envs = cfg.n_envs
@@ -85,6 +97,9 @@ def main(cfg: DictConfig):
     action_chunk_size = cfg.action_chunk_size
     single_action_dim = cfg.single_action_dim
     obj_set = cfg.get("obj_set", None)
+    use_render_camera = cfg.get("use_render_camera", False)  # NEW: Flag to use render() instead of obs
+
+    print(f"Camera mode: {'render() camera' if use_render_camera else 'observation camera'}")
 
     # Setup environment wrappers
     wrappers = [
@@ -108,6 +123,7 @@ def main(cfg: DictConfig):
         episode_mode=episode_mode, 
         obj_set=obj_set,
         wrappers=wrappers,
+        shader_pack=shader_pack,  # NEW: Pass shader pack for camera configs
     )
     env_unwrapp: BaseEnv = env.unwrapped
     
@@ -131,7 +147,34 @@ def main(cfg: DictConfig):
 
 
     # Save initial observation images
-    obs_rgb_overlay = fetch_rgb_from_obs_allenvs(env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False)
+    if use_render_camera:
+        # Use render() camera - better for visualization
+        print("Using render() camera for visualization")
+        rendered_img = env.render()  # Returns numpy array (B, H, W, C) or (H, W, C)
+        rendered_img = common.to_numpy(rendered_img)
+        if len(rendered_img.shape) == 3:
+            rendered_img = rendered_img[None]  # Add batch dim if single env
+        
+        # Convert to torch and add overlays
+        rendered_img_torch = torch.from_numpy(rendered_img).to(sim_device)
+        # Permute to (B, C, H, W) for overlay function
+        rendered_img_torch = rendered_img_torch.permute(0, 3, 1, 2)
+        
+        # Create a dummy camera dict for compatibility
+        obs_rgb_overlay = {"render_camera": rendered_img_torch}
+        
+        # Add overlays
+        from env.test.fetch_rgb_from_obs import overlay_info_on_rgb_image
+        obs_rgb_overlay["render_camera"] = overlay_info_on_rgb_image(
+            obs_rgb_overlay["render_camera"], info, reward
+        )
+    else:
+        # Use observation camera - what agent sees
+        print("Using observation camera (from sensor_data)")
+        obs_rgb_overlay = fetch_rgb_from_obs_allenvs(
+            env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False
+        )
+    
     print(f"RGB observation keys: {list(obs_rgb_overlay.keys())}")
     for camera_name, img in obs_rgb_overlay.items():
         print(f"  Camera: {camera_name}, Image shape: {img.shape}")
@@ -174,7 +217,24 @@ def main(cfg: DictConfig):
         
         obs, reward, terminated, truncated, info = env.step(actions)
         
-        obs_rgb_overlay = fetch_rgb_from_obs_allenvs(env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False)
+        if use_render_camera:
+            # Use render() camera
+            rendered_img = env.render()
+            rendered_img = common.to_numpy(rendered_img)
+            if len(rendered_img.shape) == 3:
+                rendered_img = rendered_img[None]
+            rendered_img_torch = torch.from_numpy(rendered_img).to(sim_device)
+            rendered_img_torch = rendered_img_torch.permute(0, 3, 1, 2)
+            obs_rgb_overlay = {"render_camera": rendered_img_torch}
+            from env.test.fetch_rgb_from_obs import overlay_info_on_rgb_image
+            obs_rgb_overlay["render_camera"] = overlay_info_on_rgb_image(
+                obs_rgb_overlay["render_camera"], info, reward
+            )
+        else:
+            # Use observation camera
+            obs_rgb_overlay = fetch_rgb_from_obs_allenvs(
+                env_type, obs, sim_device, model_device, info=info, reward=reward, normalize=False
+            )
         
 
         for camera_name in obs_rgb_overlay.keys():

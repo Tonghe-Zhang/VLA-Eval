@@ -1,0 +1,12 @@
+[2025-11-30 19:02:46,479][setup_maniskill_env][INFO] - Setting up ManiSkill3 environment: PushT-v1
+[2025-11-30 19:02:46,479][setup_maniskill_env][INFO] - Setting up simulation on CUDA device: cuda
+[2025-11-30 19:02:46,516][setup_maniskill_env][INFO] - About to call torch.cuda.set_device(0). Current CUDA device before set_device: 0
+[2025-11-30 19:02:46,622][setup_maniskill_env][INFO] - Current CUDA device after set_device: 0
+[2025-11-30 19:02:46,622][setup_maniskill_env][INFO] - Available devices: 1
+[2025-11-30 19:02:48,072][setup_maniskill_env][INFO] - Wrapping up BaseEnv with custom wrappers:
+[2025-11-30 19:02:48,072][setup_maniskill_env][INFO] - 	Wrapping up BaseEnv with custom wrapper PerStepRewardWrapper
+[2025-11-30 19:02:48,072][setup_maniskill_env][INFO] - 	Wrapping up BaseEnv with custom wrapper MultiActionWrapper
+[2025-11-30 19:02:48,072][setup_maniskill_env][INFO] - Wrapping environment with ManiSkillVectorEnv with auto_reset=True and ignore_terminations=False.
+[2025-11-30 19:02:48,158][setup_maniskill_env][INFO] - Double checking: env.base_env.reconfiguration_freq=0, env.auto_reset=True env.ignore_terminations=False
+[2025-11-30 19:02:48,159][setup_maniskill_env][INFO] - Successfully setup ManiSkill3 environment <MultiActionWrapper<PerStepRewardWrapper<TimeLimitWrapper<OrderEnforcing<PushTEnv<PushT-v1>>>>>> on sim_device=cuda
+[2025-11-30 19:02:48,159][setup_maniskill_env][INFO] - Sim environment details:
