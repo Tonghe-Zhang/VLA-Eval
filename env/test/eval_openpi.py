@@ -3,10 +3,6 @@ import hydra
 from omegaconf import DictConfig
 import argparse
 import torch
-
-
-
-
 from quick_test_maniskill.evaluate.load_openpi import load_openpi_model_config, load_openpi_model
 from quick_test_maniskill.env.test.eval_base import BaseEnvTester
 from quick_test_maniskill.env.test.fetch_rgb_from_obs import fetch_rgb_from_obs_allenvs
@@ -29,7 +25,6 @@ class Pi0EnvTester(BaseEnvTester):
     def __init__(self, cfg: DictConfig):
         if not OPENPI_AVAILABLE:
             raise ImportError("OpenPI modules are not available.")
-        
         super().__init__(cfg)
         self.load_model()
 
@@ -58,11 +53,7 @@ class Pi0EnvTester(BaseEnvTester):
         args.batch_size = None
         args.discrete_state_input = None
         args.action_horizon = None
-        args.action_chunk = None
-        args.num_steps = None
-        args.save_interval = None
-        args.num_train_steps = None
-        args.skip_state_embedding = None
+        args.action_chunk = Noneskip_state_embedding
         
         # Important: weights path
         # Check if cfg has a model path
@@ -77,10 +68,11 @@ class Pi0EnvTester(BaseEnvTester):
         self.model.eval()
         
     def get_language_instruction(self, n_envs: int) -> list[str]:
+        # TODO: Human real-time input from voice or keyboard
         # Get instructions from environment if available, or custom instructions
         if hasattr(self.env.unwrapped, "get_language_instruction"):
             return self.env.unwrapped.get_language_instruction()
-        return [f"Task instruction for env {i}" for i in range(n_envs)]
+        return [f"Do something useful with the object in the scene and the robot arm and gripper. "]
 
     def get_action(self, obs, info) -> torch.Tensor:
         # Prepare batch for model
@@ -114,7 +106,6 @@ class Pi0EnvTester(BaseEnvTester):
 
 @hydra.main(version_base=None, config_path="env_configs", config_name="stack_cubes")
 def main(cfg: DictConfig):
-    print("Using Pi0EnvTester...")
     tester = Pi0EnvTester(cfg)        
     tester.run()
 

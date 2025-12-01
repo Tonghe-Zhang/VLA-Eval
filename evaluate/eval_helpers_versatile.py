@@ -7,8 +7,6 @@ import gymnasium as gym
 from ManiSkill.mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 from ManiSkill.mani_skill.envs.sapien_env import BaseEnv
 from lerobot.common.policies.pi0.modeling_pi0 import PI0Policy
-from lerobot.common.policies.pretrained import PreTrainedPolicy
-from lerobot.common.policies.pi0.configuration_pi0 import PI0Config
 import numpy as np
 import json
 from typing import List
@@ -306,7 +304,7 @@ def load_pi0_model(model_path, model_device, dataset_stats_path, model_overrides
 
 
 
-def reset_env_model(env:BaseEnv, model:PreTrainedPolicy, base_seed:int, use_different_seeds:bool=False, reset_model:bool=True):
+def reset_env_model(env:BaseEnv, model, base_seed:int, use_different_seeds:bool=False, reset_model:bool=True):
     # Reset environment and model with seeds. 
     if not use_different_seeds:
         seeds=base_seed   # use the same seed for all the parallel sthe environment. 
@@ -328,7 +326,6 @@ def reset_env_model(env:BaseEnv, model:PreTrainedPolicy, base_seed:int, use_diff
         model.reset()
     
     return obs, step_info
-
                 
 
 def analyze_space(env, action_space):
@@ -418,11 +415,11 @@ class BatchEpisodeData:
         self.actions = [[] for _ in range(num_envs)]  # Store actions for each environment
         self.success = [False] * num_envs
         self.step_success = []  # Track success status at each step for all environments
-        self.proprioception = []  # Store proprioception for each environment [step][env_idx] = proprioception
-        self.instructions = []  # Store instruction for each environment [step][env_idx] = instruction   # in case there are human-in-the-loop instructions that can happen at each step. 
+        self.proprioception = [[] for _ in range(num_envs)]  # Store proprioception for each environment [env_idx][step] = proprioception
+        self.instructions = [[] for _ in range(num_envs)]  # Store instruction for each environment [env_idx][step] = instruction   # in case there are human-in-the-loop instructions that can happen at each step. 
 
 
-    def add_step_data_in_batch(self, obs_rgb_batch: torch.Tensor, rewards: torch.Tensor, step_info: dict, proprioception: torch.Tensor, instruction: str, actions_batch: torch.Tensor|None = None):
+    def add_step_data_in_batch(self, obs_rgb_batch: torch.Tensor, rewards: torch.Tensor, step_info: dict, proprioception: torch.Tensor, instruction: List[str], actions_batch: torch.Tensor|None = None):
         """Record step data for all environments in batch
         
         Args:
@@ -430,7 +427,7 @@ class BatchEpisodeData:
             rewards: torch.Tensor, shape [B], where B is the number of environments.
             step_info: dict, shape [B], where B is the number of environments.
             proprioception: torch.Tensor, shape [B, proprioception_dim], where B is the number of environments and proprioception_dim is the dimension of the proprioception.
-            instruction: str, shape [B], where B is the number of environments. This is in case there are human-in-the-loop instructions that can happen at each step. 
+            instruction: List[str], shape [B], where B is the number of environments. This is in case there are human-in-the-loop instructions that can happen at each step. 
             actions_batch: torch.Tensor|None, shape [B, action_dim], where B is the number of environments and action_dim is the dimension of the action.
         
         """
@@ -458,12 +455,6 @@ class BatchEpisodeData:
         
         # Store step success status
         self.step_success.append(current_success_flags.copy())
-        
-        # Store proprioception
-        self.proprioception.append(proprioception)
-        
-        # Store instruction
-        self.instructions.append(instruction)
         
         # Create regular tiled image (all environments in one frame)
         tiled_image = tile_images(images_bhwc)
@@ -497,6 +488,28 @@ class BatchEpisodeData:
                 
                 self.actions[env_idx].append(action_val)
             
+            # Store proprioception - ensure JSON serializable
+            if proprioception is not None:
+                prop_val = proprioception[env_idx]
+                
+                # Convert to CPU if on CUDA
+                if hasattr(prop_val, 'cpu'):
+                    prop_val = prop_val.cpu()
+                
+                # Convert torch tensor to numpy then to list
+                if hasattr(prop_val, 'numpy'):
+                    prop_val = prop_val.numpy().tolist()
+                elif hasattr(prop_val, 'tolist'):
+                    prop_val = prop_val.tolist()
+                elif isinstance(prop_val, np.ndarray):
+                    prop_val = prop_val.tolist()
+                
+                self.proprioception[env_idx].append(prop_val)
+
+            # Store instruction
+            if instruction is not None:
+                self.instructions[env_idx].append(instruction[env_idx])
+
             # Store step info
             env_info = {}
             for key, value in step_info.items():
@@ -711,7 +724,6 @@ def save_batch_episode_data(batch_data: BatchEpisodeData, data_dir: Path):
         "num_envs": batch_data.num_envs,
         "success_rate": float(np.mean(batch_data.success)),  # Ensure float, not numpy float
         "individual_success": batch_data.success,
-        "instructions": batch_data.instructions,
         "episode_lengths": [len(infos) for infos in batch_data.infos],
         "all_rewards": batch_data.rewards,  # [env_idx][step] = reward
         "all_actions": batch_data.actions,  # [env_idx][step] = action_list (already converted to lists)
