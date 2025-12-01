@@ -20,22 +20,20 @@ CONFIG_ARG="${1:-simpler_messy_pp/positionchangeto-test}"
 
 # Define Hydra output directory relative to the log directory
 LOG_BASE_DIR="$SCRIPT_DIR/../log/quick_test_maniskill/hydra_outputs"
-
-# Run the test script with Hydra output redirected
-python "$SCRIPT_DIR/test_env_wrapper_overlay.py" \
+python "$SCRIPT_DIR/eval_openpi.py" \
     --config-dir="$SCRIPT_DIR/env_configs" \
     --config-name="$CONFIG_ARG" \
     hydra.run.dir="$LOG_BASE_DIR/\${hydra.job.name}/\${now:%Y-%m-%d_%H-%M-%S}"
 
 # Usage examples:
-# ./test_env_wrapper_overlay_script.sh assembly/peginsertion
-# ./test_env_wrapper_overlay_script.sh assembly/plugcharger
-# ./test_env_wrapper_overlay_script.sh assembly/assemblingkits
-# ./test_env_wrapper_overlay_script.sh stacking/stackcube
-# ./test_env_wrapper_overlay_script.sh stacking/stackpyramid
-# ./test_env_wrapper_overlay_script.sh drawing/drawsvg
-# ./test_env_wrapper_overlay_script.sh drawing/drawtriangle
-# ./test_env_wrapper_overlay_script.sh nonprehensive/rollball
-# ./test_env_wrapper_overlay_script.sh nonprehensive/pusht
-# ./test_env_wrapper_overlay_script.sh simpler_messy_pp/position-test
-# ./test_env_wrapper_overlay_script.sh simpler_messy_pp/carrot
+# bash ./test_env_wrapper_overlay_script.sh assembly/peginsertion
+# bash ./test_env_wrapper_overlay_script.sh assembly/plugcharger
+# bash ./test_env_wrapper_overlay_script.sh assembly/assemblingkits
+# bash ./test_env_wrapper_overlay_script.sh stacking/stackcube
+# bash ./test_env_wrapper_overlay_script.sh stacking/stackpyramid
+# bash ./test_env_wrapper_overlay_script.sh drawing/drawsvg
+# bash ./test_env_wrapper_overlay_script.sh drawing/drawtriangle
+# bash ./test_env_wrapper_overlay_script.sh nonprehensive/rollball
+# bash ./test_env_wrapper_overlay_script.sh nonprehensive/pusht
+# bash ./test_env_wrapper_overlay_script.sh simpler_messy_pp/position-test
+# bash ./test_env_wrapper_overlay_script.sh simpler_messy_pp/carrot

@@ -50,7 +50,7 @@ from ManiSkill.mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 from env.multi_action_wrapper import MultiActionWrapper
 from env.per_step_reward_wrapper import PerStepRewardWrapper
 from env.test.fetch_rgb_from_obs import fetch_rgb_from_obs_allenvs, overlay_info_on_rgb_image
-from evaluate.eval_helpers import (
+from evaluate.eval_helpers_versatile import (
     create_batch_episode_data, 
     create_batch_videos,
     tile_images
@@ -209,19 +209,29 @@ class BaseEnvTester:
         return [f"Test env {i}" for i in range(n_envs)]
 
     def get_proprioception(self, env, prop_type: str = "qpos") -> torch.Tensor:
+        """
+        Get proprioception from the environment.
+        Args:
+            env: ManiSkill environment
+            prop_type: Type of proprioception to get. "qpos", "qvel", "state", "ee_pose_UMI", "ee_pose". 
+            * When we use "qpos", we get the joint positions of all active joints. [B, 8] for a 6 dof arm with 2 grippers. That quantity contains the states for each gripper. 
+            * When we use "ee_pose", by default (FK) we only get the [position, quaternion]=7 dimension pose of the end-effector in the robot base frame, which excludes gripper states. 
+              We also consider the error in that measurement so we either use FK or SLAM, and don't query the absolte state obtained by the simulator. 
+            * Notice that while action are usually 7 dim for a single 2-gripper arm, [position, euler_angle, gripper_state], we use quaternion in ee_pose state. You need a conversion to make them euler angles. 
+        Returns:
+            proprioception: Proprioception tensor [B, dim]
+        """
+
         if hasattr(env.unwrapped, 'agent') and hasattr(env.unwrapped.agent, 'robot'):
             env_unwrapped: BaseEnv = env.unwrapped
             agent = env_unwrapped.agent
             robot: Articulation = env_unwrapped.agent.robot
-             
             if prop_type == "qpos":  # joint positions, dim=joint_dof, which is 6 + 2 = 8 for the arm joints + 2 for the gripper joints as of WidowX250S. 
                 proprioception = robot.get_qpos()
             elif prop_type == "qvel":  # joint velocities, dim=joint_dof
                 proprioception = robot.get_qvel()
             elif prop_type == "state":  # [pose.p, pose.q, vel, ang_vel, qpos, qvel], dim=7+3+3+2*joint_dof
                 proprioception = robot.get_state()
-            elif prop_type == "ee_pose_UMI":  # [pose.p, pose.q], dim=7 x num_arms. This one requires visual SLAM. 
-                raise NotImplementedError("ee_pose_UMI is not implemented")  
             elif prop_type == "ee_pose":  # [pose.p, pose.q], dim=7 x num_arms. Standard FK solution, position + quaternion of end-effector. 
                 qpos = robot.get_qpos()   # all active joint positoins. [B, 8] for a 6 dof arm with 2 grippers. 
                 arm_joint_indices = get_active_joint_indices(robot, agent.arm_joint_names)
@@ -234,14 +244,20 @@ class BaseEnvTester:
                 )
                 # Only pass the qpos for the arm joints (6 DOF) instead of full robot qpos (8 DOF includes 2 dims for the 2 grippers, gripper_joint_names = ["left_finger", "right_finger"])
                 ee_pose = forward_kinematics(env_unwrapped, kinematics, qpos_arm, world_frame=False)
-                proprioception = torch.hstack([ee_pose.p, ee_pose.q]) 
+                proprioception = torch.hstack([ee_pose.p, ee_pose.q])
+            elif prop_type == "ee_pose_UMI":  # [pose.p, pose.q], dim=7 x num_arms. This one requires visual SLAM. 
+                raise NotImplementedError("ee_pose_UMI is not implemented")  
             else:
                 raise ValueError(f"Invalid proprioception type: {prop_type}")
             return proprioception.to(self.model_device) # [B, dim]
         else: 
             raise ValueError("env.unwrapped.agent.robot not found")
-
-    def get_action(self, obs, info) -> torch.Tensor:
+    
+    def get_vla_obs(self, obs, proprioception, language_instruction) -> dict:
+        """Get VLA observations for the current observation, which includes the observation, optionally proprioception, and language instruction."""
+        return None
+    
+    def get_action(self, full_obs) -> torch.Tensor:
         """Get action for the current observation."""
         return torch.randn(self.n_envs, self.action_replan_horizon, self.single_action_dim, device=self.sim_device)
 
@@ -268,20 +284,24 @@ class BaseEnvTester:
         
         print(f"\nRunning {self.num_test_steps} test steps with video recording...")
         
-        instructions = self.get_language_instruction(self.n_envs)
+        
         
         # Prepare recorders
         batch_data = dict()
         video_dir_camera_dir = dict()
         for camera_name in obs_rgb_overlay.keys():
-            batch_data[camera_name] = create_batch_episode_data(num_envs=self.n_envs, instructions=instructions)
+            batch_data[camera_name] = create_batch_episode_data(num_envs=self.n_envs)
             video_dir_camera_dir[camera_name] = self.video_test_dir / f"{camera_name}"
             video_dir_camera_dir[camera_name].mkdir(parents=True, exist_ok=True)
 
         # Step loop
         for step in tqdm(range(self.num_test_steps)):
             proprioception = self.get_proprioception(self.env, prop_type=self.proprioception_type)
-            actions = self.get_action(obs, info)
+            language_instruction = self.get_language_instruction(self.n_envs)
+
+            full_obs = self.get_vla_obs(obs, proprioception, language_instruction)
+            
+            actions = self.get_action(full_obs)
             
             obs, reward, terminated, truncated, info = self.env.step(actions)
             
@@ -292,7 +312,9 @@ class BaseEnvTester:
                     obs_rgb_batch=obs_rgb_overlay[camera_name].permute(0, 2, 3, 1),
                     rewards=reward,
                     step_info=info,
-                    actions_batch=actions
+                    actions_batch=actions,
+                    proprioception=proprioception,
+                    instruction=language_instruction
                 )
 
         # Generate videos

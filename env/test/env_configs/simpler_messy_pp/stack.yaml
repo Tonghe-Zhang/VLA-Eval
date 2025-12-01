@@ -12,7 +12,7 @@ num_test_steps: 100
 
 # Action space configuration
 # pd_ee_delta_pose: 6-dim (3 pos + 3 rot) + 1-dim gripper = 7-dim
-action_chunk_size: 5
+action_replan_horizon: 5
 single_action_dim: 7
 
 # Observation and render mode

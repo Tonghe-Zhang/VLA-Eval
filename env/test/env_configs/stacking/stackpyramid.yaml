@@ -27,7 +27,7 @@ model_device: "cuda"
 render_mode: "rgb_array"
 
 # Action space configuration
-action_chunk_size: 5
+action_replan_horizon: 5
 single_action_dim: 7
 
 # Camera configuration
