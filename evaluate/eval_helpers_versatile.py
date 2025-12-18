@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 from pathlib import Path
 from omegaconf import DictConfig, OmegaConf
-import gymnasium as gym
-from ManiSkill.mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 from ManiSkill.mani_skill.envs.sapien_env import BaseEnv
 from lerobot.common.policies.pi0.modeling_pi0 import PI0Policy
 import numpy as np
@@ -431,6 +429,10 @@ class BatchEpisodeData:
             actions_batch: torch.Tensor|None, shape [B, action_dim], where B is the number of environments and action_dim is the dimension of the action.
         
         """
+        
+        
+        
+        
         # Convert batch images to CPU and numpy
         if obs_rgb_batch.device != torch.device("cpu"):
             obs_rgb_batch = obs_rgb_batch.cpu()
@@ -509,12 +511,15 @@ class BatchEpisodeData:
             # Store instruction
             if instruction is not None:
                 self.instructions[env_idx].append(instruction[env_idx])
-
             # Store step info
             env_info = {}
             for key, value in step_info.items():
-                if hasattr(value, '__getitem__') and len(value) > env_idx:
-                    item_value = value[env_idx]
+                if hasattr(value, '__getitem__') and not isinstance(value, dict) and len(value) > env_idx:
+                    try:
+                        item_value = value[env_idx]
+                    except (KeyError, TypeError, IndexError):
+                        # Skip items that can't be indexed (e.g., nested dicts)
+                        continue
                     # Handle different types of values
                     if hasattr(item_value, 'item'):
                         # Try to convert to scalar

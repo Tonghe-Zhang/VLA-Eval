@@ -440,6 +440,10 @@ class BatchEpisodeData:
         # Store individual images for later use
         self.individual_images.append([images_bhwc[i] for i in range(self.num_envs)])
         
+        # Update instructions if provided
+        if instruction is not None:
+            self.instructions = instruction
+        
         # Get current success status for each environment
         current_success_flags = []
         for env_idx in range(self.num_envs):
@@ -486,6 +490,24 @@ class BatchEpisodeData:
                     action_val = action_val.tolist()
                 
                 self.actions[env_idx].append(action_val)
+            
+            # Store proprioception - ensure JSON serializable
+            if proprioception is not None:
+                prop_val = proprioception[env_idx]
+                
+                # Convert to CPU if on CUDA
+                if hasattr(prop_val, 'cpu'):
+                    prop_val = prop_val.cpu()
+                
+                # Convert torch tensor to numpy then to list
+                if hasattr(prop_val, 'numpy'):
+                    prop_val = prop_val.numpy().tolist()
+                elif hasattr(prop_val, 'tolist'):
+                    prop_val = prop_val.tolist()
+                elif isinstance(prop_val, np.ndarray):
+                    prop_val = prop_val.tolist()
+                
+                self.proprioception[env_idx].append(prop_val)
             
             # Store step info
             env_info = {}

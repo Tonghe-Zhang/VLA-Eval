@@ -1,0 +1,12 @@
+# @package _global_
+
+# Combined config: StackCube environment + Pi0 model
+defaults:
+  - /env_cfg/simpler_messy_pp/eggplant
+  - /model_cfg/pi05_maniskill@model_cfg
+  - _self_
+
+# Both configs are now accessible as:
+# - All env params at top level (due to flatten_config_if_nested)
+# - model_cfg.* for model params
+

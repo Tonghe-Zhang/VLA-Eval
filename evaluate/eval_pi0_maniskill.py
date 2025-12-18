@@ -1,40 +1,5 @@
 #!/usr/bin/env python3
-"""
 
-Config Override Feature:
-You can now override num_steps, n_action_steps and act_steps from prompt for the model's config.json file
-by adding config_overrides to your yaml configuration file:
-
-model:
-  model_overrides:
-    num_steps: 10        # Override num_steps (default: 5)
-    n_action_steps: 5    # Override n_action_steps (default: 50)
-    act_steps: 5         # Override act_steps (default: 50)
-
-Set values to null to use original config values.
-See config/override_example.yaml for a complete example.
-
-Evaluation script for pi0 model on ManiSkill3 environments.
-By default, this script evaluates the pi0 model on the PutOnPlateInScene25Single-v1 task,
-records videos in 10 environments, and logs the text prompts sent to the model.
-
-Since we are doing evaluation, we focus on the episodic success rate, instead of the per-step reward which could be always zero according to the simulator. 
-
-This script is designed to be efficient and save space when the environment number is large. 
-It saves all environments' data in one file, creates one video for all environments,
-and records all robot actions taken during the evaluation for analysis.
-
-Data recorded includes:
-- RGB observations (tiled videos)
-- Robot actions (with statistics)
-- Rewards and episode info
-- Success rates per environment
-
-Videos created:
-- Regular tiled video: All environments in one video
-- Success-filtered tiled video: All environments with green filter on successful episodes
-- Success-only tiled video: Only successful environments (if any) 
-"""
 
 # DEBUG: Print CUDA_VISIBLE_DEVICES before any imports
 import os

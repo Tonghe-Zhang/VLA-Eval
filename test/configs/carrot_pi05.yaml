@@ -1,0 +1,8 @@
+# @package _global_
+
+# Combined config: Carrot task + Pi0.5 model
+defaults:
+  - /env_cfg/simpler_messy_pp/carrot
+  - /model_cfg/pi05_maniskill@model_cfg
+  - _self_
+

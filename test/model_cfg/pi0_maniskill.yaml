@@ -1,0 +1,26 @@
+# Pi0 model configuration for ManiSkill tasks
+# Flattened structure for clean Hydra overrides
+
+# OpenPI base config name (required)
+config_name: "pi0_maniskill"
+
+# Model architecture overrides (flattened - no nested dict)
+action_horizon: 5
+action_chunk: 5
+num_steps: 4
+discrete_state_input: null
+skip_state_embedding: null
+
+# Task/dataset configuration
+mode: "maniskill"
+tasks: "all"  # Override with "maniskill_StackCube-v1" etc.
+exp_name: "test"
+
+# Checkpoint path
+pytorch_weight_path: null
+
+# Optional: training hyperparameters
+batch_size: null
+
+# Device
+model_device: "cuda:0"

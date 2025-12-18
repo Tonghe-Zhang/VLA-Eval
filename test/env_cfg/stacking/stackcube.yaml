@@ -1,0 +1,37 @@
+# Configuration for StackCube-v1 environment
+
+env_id: "StackCube-v1"
+env_type: "tabletop-gripper"
+control_mode: "pd_ee_pose"
+episode_mode: "train"
+
+sim_config:
+  sim_freq: 500
+  control_freq: 5
+
+sensor_config:
+  shader_pack: "default"
+  width: 480
+  height: 480
+
+obs_mode: "rgb"
+proprioception_type: "qpos"
+n_envs: 4
+n_steps_episode: 1000  # maximum steps before reset
+num_test_steps: 40  # Number of steps to run - needs more for stacking
+frame_per_second: 24
+save_detailed_logs: false  # Set to true to save verbose step_infos (makes files much larger)
+
+sim_backend: "gpu"
+sim_device: "cuda"
+sim_device_id: 0
+model_device: "cuda"
+render_mode: "rgb_array"
+
+# Action space configuration
+action_replan_horizon: 5
+single_action_dim: 7
+
+# Camera configuration
+use_render_camera: true  # Use render() camera for better visualization angles
+

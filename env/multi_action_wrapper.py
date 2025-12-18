@@ -56,7 +56,7 @@ class MultiActionWrapper(gymnasium.Wrapper):
         if not isinstance(action, torch.Tensor):
             raise ValueError(f"Action must be a torch.Tensor, but got {type(action)}")
         if action.ndim != 3:
-            raise ValueError(f"Action must be a 3D tensor of shape [num_envs, act_steps, action_dim] but got {action.ndim}D tensor")
+            raise ValueError(f"Action must be a 3D tensor of shape [num_envs, act_steps, action_dim] but got {action.ndim}D tensor of shape {action.shape}")
         if action.shape[0] != self.num_envs:
             raise ValueError(f"Action must have {self.num_envs} environments, but got {action.shape[0]}")
         
