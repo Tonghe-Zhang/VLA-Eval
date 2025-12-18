@@ -1,6 +1,6 @@
-# Configuration for PushT-v1 environment
- 
+# @package _global_
 
+# Configuration for PushT-v1 environment
 
 env_id: "PushT-v1"
 env_type: "tabletop-gripper"

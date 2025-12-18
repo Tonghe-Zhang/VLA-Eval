@@ -1,3 +1,5 @@
+# @package _global_
+
 # Configuration for DrawTriangle-v1 environment
 
 env_id: "DrawTriangle-v1"

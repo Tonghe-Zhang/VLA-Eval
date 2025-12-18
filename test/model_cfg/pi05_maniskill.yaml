@@ -4,11 +4,11 @@
 config_name: "pi05_maniskill"
 
 # Model architecture overrides (flattened)
-action_horizon: 5
-action_chunk: 5
-num_steps: 4
-discrete_state_input: null
-skip_state_embedding: null
+action_horizon: 8       # output chunk size
+action_replan_horizon: 5     # replan horizon
+num_steps: 4          # number denoising steps
+discrete_state_input: True # whether to use discrete state input
+skip_state_embedding: null # whether to skip state embedding
 
 # Task/dataset configuration
 mode: "maniskill"

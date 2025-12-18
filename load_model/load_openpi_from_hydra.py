@@ -58,8 +58,10 @@ def load_openpi_model_config_from_hydra(model_cfg: DictConfig):
     args.save_interval = model_cfg.get("save_interval", None)
     
     # Model architecture params (flattened in config, not nested under 'model' key)
+    # action_horizon: model's original output action chunk size
     args.action_horizon = model_cfg.get("action_horizon", None)
-    args.action_chunk = model_cfg.get("action_chunk", None)
+    # action_replan_horizon: actual output action chunk (replan horizon)
+    args.action_replan_horizon = model_cfg.get("action_replan_horizon", None)
     args.num_steps = model_cfg.get("num_steps", None)
     args.discrete_state_input = model_cfg.get("discrete_state_input", None)
     args.skip_state_embedding = model_cfg.get("skip_state_embedding", None)

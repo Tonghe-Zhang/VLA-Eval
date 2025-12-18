@@ -1,3 +1,5 @@
+# @package _global_
+
 # Configuration for StackPyramid-v1 environment
 
 env_id: "StackPyramid-v1"

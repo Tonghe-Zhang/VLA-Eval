@@ -42,6 +42,7 @@ def setup_maniskill_env(env_id,
                         control_mode,
                         episode_mode='eval',
                         obj_set=None,
+                        robot_uids=None,  # NEW: specify robot type (e.g., "panda", "widowx250s", "widowxai")
                         wrappers=None, # list of wrappers to wrap the environment.
                         shader_pack="default",  # NEW: shader pack for rendering
                         )->ManiSkillVectorEnv:
@@ -60,6 +61,8 @@ def setup_maniskill_env(env_id,
         control_mode: str, the mode to use for control.
         episode_mode: str, the mode to use for episodes.
         obj_set: str, the set of objects to use for the environment.
+        robot_uids: str or None, the robot type to use (e.g., "panda", "widowx250s", "widowxai"). 
+                    If None, uses environment default.
         wrappers: list, the wrappers to use for the environment.
         shader_pack: str, the shader pack to use for rendering (default, rt, rt-fast).
     Returns:
@@ -103,37 +106,30 @@ def setup_maniskill_env(env_id,
 
          
 
+            # Build kwargs for gym.make()
+            make_kwargs = dict(
+                id=env_id,
+                num_envs=n_envs,
+                max_episode_steps=max_episode_len,
+                obs_mode=obs_mode,
+                render_mode=render_mode,
+                control_mode=control_mode,
+                sim_backend=sim_backend,
+                sim_config=sim_config,
+                sensor_configs=sensor_config,
+                human_render_camera_configs=dict(shader_pack=shader_pack),
+                viewer_camera_configs=dict(shader_pack=shader_pack),
+                reconfiguration_freq=reconfiguration_freq,
+            )
+            
+            # Add optional parameters
             if obj_set is not None:
-                env: BaseEnv = gym.make( # type: ignore
-                    id=env_id,
-                    num_envs=n_envs,
-                    max_episode_steps=max_episode_len,
-                    obs_mode=obs_mode,
-                    render_mode=render_mode,
-                    control_mode=control_mode,
-                    sim_backend=sim_backend,
-                    sim_config=sim_config,
-                    sensor_configs=sensor_config,
-                    human_render_camera_configs=dict(shader_pack=shader_pack),  # NEW: for rendering
-                    viewer_camera_configs=dict(shader_pack=shader_pack),
-                    reconfiguration_freq=reconfiguration_freq,
-                    obj_set=obj_set
-                )# type: ignore
-            else:
-                env: BaseEnv = gym.make( # type: ignore
-                    id=env_id,
-                    num_envs=n_envs,
-                    max_episode_steps=max_episode_len,
-                    obs_mode=obs_mode,
-                    render_mode=render_mode,
-                    control_mode=control_mode,
-                    sim_backend=sim_backend,
-                    sim_config=sim_config,
-                    sensor_configs=sensor_config,
-                    human_render_camera_configs=dict(shader_pack=shader_pack),  # NEW: for rendering
-                    viewer_camera_configs=dict(shader_pack=shader_pack),
-                    reconfiguration_freq=reconfiguration_freq,
-                )# type: ignore
+                make_kwargs['obj_set'] = obj_set
+            if robot_uids is not None:
+                make_kwargs['robot_uids'] = robot_uids
+                logger.info(f"Using custom robot: {robot_uids}")
+            
+            env: BaseEnv = gym.make(**make_kwargs)  # type: ignore
             
             # Wrap the environment with the wrappers, if provided. 
             if wrappers:

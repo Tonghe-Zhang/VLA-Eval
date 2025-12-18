@@ -1,6 +1,6 @@
-# Configuration for PegInsertionSide-v1 environment
- 
+# @package _global_
 
+# Configuration for PegInsertionSide-v1 environment
 
 env_id: "PegInsertionSide-v1"
 env_type: "tabletop-gripper"

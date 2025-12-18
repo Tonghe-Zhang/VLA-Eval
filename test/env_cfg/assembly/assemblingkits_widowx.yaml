@@ -1,10 +1,15 @@
 # @package _global_
 
-# Configuration for PlugCharger-v1 environment
+# Configuration for AssemblingKits-v1 environment with WidowX250S robot
+#
+# Usage:
+#   bash test/eval_openpi.sh <your_composed_config_name>
+#   Or via Hydra overrides: robot_uids=widowx250s control_mode=pd_ee_delta_pose
 
-env_id: "PlugCharger-v1"
+env_id: "AssemblingKits-v1"
 env_type: "tabletop-gripper"
-control_mode: "pd_ee_pose" # "pd_ee_delta_pose"
+robot_uids: "widowx250s_simpler"  # Use SimplerEnv-compatible WidowX with EE control
+control_mode: "arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos"  # SimplerEnv control mode
 episode_mode: "eval"
 
 sim_config:
@@ -17,7 +22,8 @@ sensor_config:
   height: 480
 
 obs_mode: "rgb"
-proprioception_type: "qpos"
+proprioception_type: "qpos"  # 6 arm joints + 2 gripper joints = 8 dim
+
 n_envs: 4
 n_steps_episode: 1000  # maximum steps before reset
 num_test_steps: 30  # Number of steps to run
@@ -28,9 +34,12 @@ sim_device: "cuda"
 sim_device_id: 0
 model_device: "cuda"
 render_mode: "rgb_array"
+
 # Action space configuration
+# WidowX: 6-DOF arm + 1 gripper = 7 dimensions
 action_replan_horizon: 5
 single_action_dim: 7
 
 # Camera configuration
 use_render_camera: true  # Use render() camera for better visualization angles
+

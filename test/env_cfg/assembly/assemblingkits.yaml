@@ -1,3 +1,5 @@
+# @package _global_
+
 # Configuration for AssemblingKits-v1 environment
 
 env_id: "AssemblingKits-v1"

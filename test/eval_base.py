@@ -132,11 +132,13 @@ class BaseEnvTester:
         self.action_replan_horizon = self.cfg.action_replan_horizon
         self.single_action_dim = self.cfg.single_action_dim
         self.obj_set = self.cfg.get("obj_set", None)
+        self.robot_uids = self.cfg.get("robot_uids", None)  # NEW: Robot type selection
         self.use_render_camera = self.cfg.get("use_render_camera", False)
         self.save_detailed_logs = self.cfg.get("save_detailed_logs", False)  # Default: don't save verbose step_infos
         self.show_success_overlay = self.cfg.get("show_success_overlay", True)  # Default: show green overlay for successful envs
         
         print(f"\nCamera mode: {'render() camera' if self.use_render_camera else 'observation camera'}")
+        print(f"Robot: {self.robot_uids if self.robot_uids else 'environment default'}")
         print(f"Detailed logging (step_infos): {'enabled' if self.save_detailed_logs else 'disabled (saves space)'}")
         print(f"Success overlay: {'enabled (green mask on successful envs)' if self.show_success_overlay else 'disabled'}")
 
@@ -190,6 +192,7 @@ class BaseEnvTester:
             control_mode=self.control_mode, 
             episode_mode=self.episode_mode, 
             obj_set=self.obj_set,
+            robot_uids=self.robot_uids,  # NEW: Pass robot type
             wrappers=wrappers,
             shader_pack=self.shader_pack,
         )

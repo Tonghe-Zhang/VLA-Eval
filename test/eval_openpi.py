@@ -71,6 +71,9 @@ class Pi0EnvTester(BaseEnvTester):
         
         # Load model using model config
         self.load_model()
+        
+        # Save model architecture and config to logs
+        self.save_model_info()
 
     def load_model(self):
         """Load model and transforms - following train_pytorch.py approach."""
@@ -87,8 +90,6 @@ class Pi0EnvTester(BaseEnvTester):
         # Load model
         logging.info("Loading model...")
         self.model = load_openpi_model_from_hydra(self.model_cfg, self.model_device)
-        # Save the model architecture to a file
-
         self.model.eval()
         
         # Get train config (same as train_pytorch.py does)
@@ -121,6 +122,91 @@ class Pi0EnvTester(BaseEnvTester):
         ])
         
         logging.info("✓ Model and transforms loaded")
+    
+    def save_model_info(self):
+        """Save model architecture and configuration to log directory."""
+        import json
+        from pathlib import Path
+        
+        logging.info("Saving model info to logs...")
+        
+        # Save to video_test_dir (where evaluation results are stored)
+        save_dir = self.video_test_dir
+        
+        # 1. Save model architecture (string representation)
+        arch_file = save_dir / "model_architecture.txt"
+        with open(arch_file, 'w') as f:
+            f.write("="*80 + "\n")
+            f.write("MODEL ARCHITECTURE\n")
+            f.write("="*80 + "\n\n")
+            f.write(str(self.model))
+            f.write("\n\n")
+            f.write("="*80 + "\n")
+            f.write("MODEL CONFIGURATION\n")
+            f.write("="*80 + "\n\n")
+            f.write(str(self.model.config))
+        logging.info(f"✓ Saved model architecture to {arch_file}")
+        
+        # 2. Save model config as JSON (for easy parsing)
+        config_file = save_dir / "model_config.json"
+        config_dict = {}
+        for field_name in dir(self.model.config):
+            if not field_name.startswith('_'):
+                try:
+                    value = getattr(self.model.config, field_name)
+                    # Only save serializable types
+                    if isinstance(value, (int, float, str, bool, list, tuple, type(None))):
+                        config_dict[field_name] = value
+                    else:
+                        config_dict[field_name] = str(value)
+                except:
+                    pass
+        
+        with open(config_file, 'w') as f:
+            json.dump(config_dict, f, indent=2)
+        logging.info(f"✓ Saved model config to {config_file}")
+        
+        # 3. Save Pi0Config as YAML (the actual model config dataclass)
+        import dataclasses
+        pi0_config_file = save_dir / "pi0_config.yaml"
+        try:
+            # Convert dataclass to dict
+            config_dict = dataclasses.asdict(self.model.config)
+            # Write as YAML
+            with open(pi0_config_file, 'w') as f:
+                # Use OmegaConf to write pretty YAML
+                from omegaconf import OmegaConf
+                f.write(OmegaConf.to_yaml(OmegaConf.create(config_dict)))
+            logging.info(f"✓ Saved Pi0Config to {pi0_config_file}")
+        except Exception as e:
+            # Fallback: save as string representation
+            logging.warning(f"Could not serialize Pi0Config as dict: {e}. Saving as string.")
+            with open(pi0_config_file, 'w') as f:
+                f.write(str(self.model.config))
+            logging.info(f"✓ Saved Pi0Config (as string) to {pi0_config_file}")
+        
+        # 4. Save Hydra model config (the config used to load the model)
+        hydra_model_cfg_file = save_dir / "hydra_model_config.yaml"
+        with open(hydra_model_cfg_file, 'w') as f:
+            f.write(OmegaConf.to_yaml(self.model_cfg))
+        logging.info(f"✓ Saved Hydra model config to {hydra_model_cfg_file}")
+        
+        # 5. Save parameter count
+        param_count_file = save_dir / "model_parameters.txt"
+        total_params = sum(p.numel() for p in self.model.parameters())
+        trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        with open(param_count_file, 'w') as f:
+            f.write(f"Total parameters: {total_params:,}\n")
+            f.write(f"Trainable parameters: {trainable_params:,}\n")
+            f.write(f"Non-trainable parameters: {total_params - trainable_params:,}\n")
+            f.write(f"\nParameter breakdown by module:\n")
+            f.write("-" * 60 + "\n")
+            for name, module in self.model.named_children():
+                module_params = sum(p.numel() for p in module.parameters())
+                f.write(f"{name:30s}: {module_params:>15,} params\n")
+        logging.info(f"✓ Saved parameter count to {param_count_file}")
+        
+        logging.info("✓ Model info saved successfully")
         
     def get_language_instruction(self, n_envs: int) -> list[str]:
         # TODO: Human real-time input from voice or keyboard
@@ -193,7 +279,7 @@ class Pi0EnvTester(BaseEnvTester):
         })
 
         actions = torch.from_numpy(output["actions"]).to(self.sim_device) 
-        actions = actions[:,:,:self.single_action_dim]
+        actions = actions[:,:self.model.config.action_replan_horizon,:self.single_action_dim]
         return actions
 
 @hydra.main(version_base=None, config_path=".", config_name=None)

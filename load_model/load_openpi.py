@@ -336,8 +336,10 @@ def parse_args():
     parser.add_argument("--decay_lr", type=float, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--discrete_state_input", type=bool, default=None) # type: ignore
+    # action_horizon: model's original output action chunk size (what the model predicts)
     parser.add_argument("--action_horizon", type=int, default=None)
-    parser.add_argument("--action_chunk", type=int, default=None)
+    # action_replan_horizon: actual output action chunk used for execution (replan horizon)
+    parser.add_argument("--action_replan_horizon", type=int, default=None)
     parser.add_argument("--num_steps", type=int, default=None)
     parser.add_argument("--save_interval", type=int, default=None)
     parser.add_argument("--num_train_steps", type=int, default=None)
@@ -365,13 +367,15 @@ def load_openpi_model_config(args):
         config = dataclasses.replace(config, model=dataclasses.replace(config.model, discrete_state_input=args.discrete_state_input))
     if args.skip_state_embedding is not None:
         config = dataclasses.replace(config, model=dataclasses.replace(config.model, skip_state_embedding=args.skip_state_embedding))
-    # override model config from prompt
-    if args.action_horizon is not None or args.action_chunk is not None:
+    # Override action parameters:
+    # - action_horizon: model's original output chunk (what the model generates)
+    # - action_replan_horizon: actual execution chunk (how many actions to use before replanning)
+    if args.action_horizon is not None or args.action_replan_horizon is not None:
         model_kwargs = {}
         if args.action_horizon is not None:
             model_kwargs['action_horizon'] = args.action_horizon
-        if args.action_chunk is not None:
-            model_kwargs['action_chunk'] = args.action_chunk
+        if args.action_replan_horizon is not None:
+            model_kwargs['action_replan_horizon'] = args.action_replan_horizon
         if args.num_steps is not None:
             model_kwargs['num_steps'] = args.num_steps
         if args.save_interval is not None:

@@ -1,0 +1,12 @@
+# @package _global_
+
+# Combined config: PegInsertionSide with WidowX + Pi0.5 model
+defaults:
+  - /env_cfg/assembly/peginsertion_widowx
+  - /model_cfg/pi05_maniskill@model_cfg
+  - _self_
+
+# Both configs are now accessible as:
+# - All env params at top level (due to flatten_config_if_nested)
+# - model_cfg.* for model params
+
