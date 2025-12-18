@@ -3,7 +3,7 @@
 env_id: "AssemblingKits-v1"
 env_type: "tabletop-gripper"
 control_mode: "pd_ee_pose"
-episode_mode: "train"
+episode_mode: "eval"
 
 sim_config:
   sim_freq: 500

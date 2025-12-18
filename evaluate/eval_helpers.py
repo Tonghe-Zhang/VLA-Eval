@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 from pathlib import Path
 from omegaconf import DictConfig, OmegaConf
-import gymnasium as gym
-from ManiSkill.mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 from ManiSkill.mani_skill.envs.sapien_env import BaseEnv
 from lerobot.common.policies.pi0.modeling_pi0 import PI0Policy
 from lerobot.common.policies.pretrained import PreTrainedPolicy
@@ -440,20 +438,23 @@ class BatchEpisodeData:
         # Store individual images for later use
         self.individual_images.append([images_bhwc[i] for i in range(self.num_envs)])
         
-        # Update instructions if provided
-        if instruction is not None:
-            self.instructions = instruction
-        
-        # Get current success status for each environment
+        # Get current success status for each environment (PERSISTENT: once success, stays success)
         current_success_flags = []
         for env_idx in range(self.num_envs):
-            # Check if this environment has achieved success so far
-            env_success = False
-            if self.infos[env_idx]:  # If we have previous step info
+            # Check if this environment has EVER achieved success (persistent green mask)
+            env_success = self.success[env_idx]  # Check if already marked as successful
+            
+            if not env_success and self.infos[env_idx]:  # If not yet successful, check previous steps
                 env_success = any(info.get("success", False) for info in self.infos[env_idx])
+            
             # Also check current step
-            if hasattr(step_info.get('success', []), '__getitem__') and len(step_info['success']) > env_idx:
-                env_success = env_success or step_info['success'][env_idx]
+            if not env_success and hasattr(step_info.get('success', []), '__getitem__') and len(step_info['success']) > env_idx:
+                env_success = step_info['success'][env_idx]
+            
+            # Update persistent success status
+            if env_success:
+                self.success[env_idx] = True
+            
             current_success_flags.append(env_success)
         
         # Store step success status
@@ -490,24 +491,6 @@ class BatchEpisodeData:
                     action_val = action_val.tolist()
                 
                 self.actions[env_idx].append(action_val)
-            
-            # Store proprioception - ensure JSON serializable
-            if proprioception is not None:
-                prop_val = proprioception[env_idx]
-                
-                # Convert to CPU if on CUDA
-                if hasattr(prop_val, 'cpu'):
-                    prop_val = prop_val.cpu()
-                
-                # Convert torch tensor to numpy then to list
-                if hasattr(prop_val, 'numpy'):
-                    prop_val = prop_val.numpy().tolist()
-                elif hasattr(prop_val, 'tolist'):
-                    prop_val = prop_val.tolist()
-                elif isinstance(prop_val, np.ndarray):
-                    prop_val = prop_val.tolist()
-                
-                self.proprioception[env_idx].append(prop_val)
             
             # Store step info
             env_info = {}
@@ -565,9 +548,13 @@ class BatchEpisodeData:
         self.tiled_images_success_filtered.append(tiled_image_filtered)
     
     def finalize_success_status(self):
-        """Determine success status for each environment in this episode"""
+        """Determine success status for each environment in this episode.
+        Note: Success status is already tracked persistently in add_step_data_in_batch,
+        but this method ensures any edge cases are covered.
+        """
         for env_idx in range(self.num_envs):
-            if self.infos[env_idx]:
+            if not self.success[env_idx] and self.infos[env_idx]:
+                # Only update if not already marked as successful
                 self.success[env_idx] = any(
                     info.get("success", False) for info in self.infos[env_idx]
                 )

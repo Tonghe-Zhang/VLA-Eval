@@ -443,16 +443,23 @@ class BatchEpisodeData:
         # Store individual images for later use
         self.individual_images.append([images_bhwc[i] for i in range(self.num_envs)])
         
-        # Get current success status for each environment
+        # Get current success status for each environment (PERSISTENT: once success, stays success)
         current_success_flags = []
         for env_idx in range(self.num_envs):
-            # Check if this environment has achieved success so far
-            env_success = False
-            if self.infos[env_idx]:  # If we have previous step info
+            # Check if this environment has EVER achieved success (persistent green mask)
+            env_success = self.success[env_idx]  # Check if already marked as successful
+            
+            if not env_success and self.infos[env_idx]:  # If not yet successful, check previous steps
                 env_success = any(info.get("success", False) for info in self.infos[env_idx])
+            
             # Also check current step
-            if hasattr(step_info.get('success', []), '__getitem__') and len(step_info['success']) > env_idx:
-                env_success = env_success or step_info['success'][env_idx]
+            if not env_success and hasattr(step_info.get('success', []), '__getitem__') and len(step_info['success']) > env_idx:
+                env_success = step_info['success'][env_idx]
+            
+            # Update persistent success status
+            if env_success:
+                self.success[env_idx] = True
+            
             current_success_flags.append(env_success)
         
         # Store step success status
@@ -571,9 +578,13 @@ class BatchEpisodeData:
         self.tiled_images_success_filtered.append(tiled_image_filtered)
     
     def finalize_success_status(self):
-        """Determine success status for each environment in this episode"""
+        """Determine success status for each environment in this episode.
+        Note: Success status is already tracked persistently in add_step_data_in_batch,
+        but this method ensures any edge cases are covered.
+        """
         for env_idx in range(self.num_envs):
-            if self.infos[env_idx]:
+            if not self.success[env_idx] and self.infos[env_idx]:
+                # Only update if not already marked as successful
                 self.success[env_idx] = any(
                     info.get("success", False) for info in self.infos[env_idx]
                 )

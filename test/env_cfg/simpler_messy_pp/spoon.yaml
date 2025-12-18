@@ -5,7 +5,7 @@ defaults:
   - _self_
 
 env_id: "PutSpoonOnTableClothInScene-v1"
-episode_mode: "train"
+episode_mode: "eval"
 n_envs: 4
 n_steps_episode: 1000
 num_test_steps: 80

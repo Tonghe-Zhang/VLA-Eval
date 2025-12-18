@@ -5,6 +5,7 @@ defaults:
   - _self_
 
 env_id: "PutOnPlateInScene25EEPose-v1"
+episode_mode: "eval"
 n_envs: 4
 n_steps_episode: 80
 num_test_steps: 10

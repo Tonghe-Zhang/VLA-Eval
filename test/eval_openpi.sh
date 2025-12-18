@@ -91,10 +91,8 @@ CMD="python $SCRIPT_DIR/eval_openpi.py \
     --config-name=configs/${COMPOSED_CONFIG} \
     frame_per_second=16 \
     n_envs=10 \
-    num_test_steps=50 \
+    num_test_steps=30 \
     model_cfg.pytorch_weight_path=/home/tonghe/Project/PretrainedModels/pi05_sft/Pi05-ManiSkill-25Main-SFT/ \
     model_cfg.norm_stats_dir=/home/tonghe/Project/PretrainedModels/pi05_sft/Pi05-ManiSkill-25Main-SFT/assets/PutOnPlateInScene25Mainv3/meta \
     $@"
-
-
 eval $CMD

@@ -4,7 +4,7 @@
 env_id: "RollBall-v1"
 env_type: "tabletop-gripper"
 control_mode: "pd_ee_pose" # "pd_ee_delta_pose"
-episode_mode: "train"
+episode_mode: "eval"
 
 sim_config:
   sim_freq: 500

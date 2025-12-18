@@ -112,9 +112,11 @@ class BaseEnvTester:
         self.obj_set = self.cfg.get("obj_set", None)
         self.use_render_camera = self.cfg.get("use_render_camera", False)
         self.save_detailed_logs = self.cfg.get("save_detailed_logs", False)  # Default: don't save verbose step_infos
+        self.show_success_overlay = self.cfg.get("show_success_overlay", True)  # Default: show green overlay for successful envs
         
         print(f"\nCamera mode: {'render() camera' if self.use_render_camera else 'observation camera'}")
         print(f"Detailed logging (step_infos): {'enabled' if self.save_detailed_logs else 'disabled (saves space)'}")
+        print(f"Success overlay: {'enabled (green mask on successful envs)' if self.show_success_overlay else 'disabled'}")
 
     def setup_directories(self):
         """Prepare output directories."""
@@ -439,7 +441,7 @@ class BaseEnvTester:
                 batch_data[camera_name],
                 video_dir_camera_dir[camera_name],
                 fps=self.frame_per_second,
-                filter_success=False,
+                filter_success=self.show_success_overlay,
                 custom_filename=custom_filename,
             )
             
