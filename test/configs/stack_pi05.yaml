@@ -2,7 +2,7 @@
 
 # Combined config: StackCube environment + Pi0 model
 defaults:
-  - /env_cfg/simpler_messy_pp/stackcube
+  - /env_cfg/simpler_messy_pp/stack
   - /model_cfg/pi05_maniskill@model_cfg
   - _self_
 
