@@ -5,16 +5,19 @@
 ## Directory structure
 
 Our recommended directory structure:
---quick_test_maniskill
-|_SimplerEnvPlus
-|_openpi
-|_PretrainedModels
-    |__big_vision
-    |__pi0_base
-    |__pi05_base
-    |__pi0_sft
-    |__pi05_sft
-        |_your/specific/checkpoint/name
+
+```
+quick_test_maniskill/
+├── SimplerEnvPlus/
+├── openpi/
+└── PretrainedModels/
+    ├── big_vision/
+    ├── pi0_base/
+    ├── pi05_base/
+    ├── pi0_sft/
+    └── pi05_sft/
+        └── your/specific/checkpoint/name/
+```
 
 
 ## Openpi environment
