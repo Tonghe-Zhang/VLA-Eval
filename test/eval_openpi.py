@@ -108,7 +108,6 @@ class Pi0EnvTester(BaseEnvTester):
             logging.info(f"✓ Loaded norm stats from config:\n {norm_stats}")
         
         # Build transforms exactly as training does
-        # Input: data_transforms.inputs -> Normalize -> model_transforms.inputs
         self.input_transform = transforms.compose([
             *data_cfg.data_transforms.inputs,
             transforms.Normalize(norm_stats, use_quantiles=data_cfg.use_quantile_norm),
@@ -254,12 +253,8 @@ class Pi0EnvTester(BaseEnvTester):
             transformed = self.input_transform(sample_obs)
             transformed_samples.append(transformed)
         
-
-        
         import jax
         processed = jax.tree.map(stack_samples, *transformed_samples)
-        
-        
         processed = to_device(processed, self.model_device)
         
         # Model inference
